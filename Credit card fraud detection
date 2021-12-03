@@ -1,52 +1,50 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-#########importing classification models######
-
-from sklearn.preprocessing import StandardScaler
+##########importing classification model############
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier # KNN algorithm
-from sklearn.linear_model import LogisticRegression # Logistic regression algorithm
+from sklearn.linear_model import LogisticRegression
+
 
 ##########importing evaluation metrics######
 
 from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score
 
-import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
+##########importing dataset##########
 
-df = pd.read_csv('/kaggle/input/creditcardfraud/creditcard.csv')
-df.drop('Time', axis = 1, inplace = True)
+df = pd.read_csv('C:/Users/pavan/Downloads/creditcard.csv')
 print(df.head())
+print(df.info())
+df.isnull().sum()
 
-############data normalisation############
+############dealing with unbalanced dataset############
 
-sc = StandardScaler()
-amount = df['Amount'].values
+df['Class'].value_counts()
 
-df['Amount'] = sc.fit_transform(amount.reshape(-1, 1))
+non_fraud=df[df.Class==0]
+fraud=df[df.Class==1]
+
+non_fraud_sample=non_fraud.sample(n=492)
+new_df=pd.concat([non_fraud_sample,fraud],axis=0)
+
+new_df['Class'].value_counts()
 
 ###########data splitting############
 
-x = df.drop('Class', axis = 1).values
-y = df['Class'].values
+x = new_df.drop('Class', axis = 1)
+y = new_df['Class']
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 0)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2,random_state = 2)
+print(x.shape,x_train.shape,x_test.shape)
 
 ##########implementing classification model########
 
-n = 5
-knn = KNeighborsClassifier(n_neighbors = n)
-knn.fit(x_train, y_train)
-knn_test = knn.predict(x_test)
+model=LogisticRegression(solver='liblinear')
+model.fit(x_train,y_train)
+lr_test=model.predict(x_test)
 
-#########printing performace metrics of model#########
+#########Evaluating performance metrics of model#########
 
-print(classification_report(y_test,knn_test))
-print("Accuracy is : {r:.2f}%".format(r=(accuracy_score(y_test, knn_test)*100)))
+print(classification_report(lr_test,y_test))
+print("Accuracy is : {r:.2f}%".format(r=(accuracy_score(y_test,lr_test)*100)))
