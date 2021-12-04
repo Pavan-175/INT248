@@ -1,0 +1,74 @@
+import pandas as pd
+import numpy as np
+import keras
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))import os
+
+data = pd.read_csv('/kaggle/input/creditcard.csv')
+
+data['Class'].value_counts()
+
+data['normalized_amount']=StandardScaler().fit_transform(data['Amount'].values.reshape(-1,1))
+
+data=data.drop(['Amount'],axis=1)
+data=data.drop(['Time'],axis=1)
+
+X= data.drop('Class', axis = 1)
+y = data['Class']
+
+from keras.models import Sequential
+from keras.layers import Dropout
+from keras.layers import Dense
+
+X_resample,y_resample=SMOTE().fit_sample(X,y.values.ravel())
+y_resample=pd.DataFrame(y_resample)
+X_resample=pd.DataFrame(X_resample)
+
+X_train, X_test, y_train, y_test = train_test_split(X_resample, y_resample, test_size = 0.3, random_state=0)
+
+print(X_train.shape,X_test.shape)
+
+X_train = np.array(X_train)
+X_test=np.array(X_test)
+y_train=np.array(y_train)
+y_test=np.array(y_test)
+
+model = Sequential([
+     #First Layer
+     Dense(units=16, input_dim=29, activation='relu'),
+      #Second Layer
+     Dense(units=24,activation='relu'),
+     Dropout(0.5),
+      #Third Layer
+     Dense(20,activation='relu'),
+     #Fourth Layer
+     Dense(24,activation='relu'),
+     #Fifth Layer
+     Dense(1,activation='sigmoid')  
+    ])
+model.summary()
+
+model.compile(optimizer='adam', loss='binary_crossentropy',metrics=['accuracy'])
+model.fit(X_train,y_train, batch_size=15, epochs=3)
+
+accuracy=model.evaluate(X_test,y_test)
+print(accuracy)
+
+y_pred = model.predict(X_test)
+y_pred1 = y_pred.round()
+
+print("Accuracy is : {r:.2f}%".format(r=(accuracy_score(y_test,y_pred1)*100)))
+
+print(classification_report(y_pred1,y_test))
+
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_pred1,y_test)
